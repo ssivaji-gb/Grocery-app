@@ -34,6 +34,15 @@ function addData(e) {
       if (list.children.length == 0) {
         document.querySelector(".clear-btn").style.display = "none";
       }
+      // alert-delete-success
+      document.querySelector(".alert").innerHTML = "Delete Successfully";
+      let alertBox = document.querySelector(".alert");
+      alertBox.classList.add("alert-success");
+
+      setTimeout(() => {
+        document.querySelector(".alert").innerHTML = "";
+        alertBox.classList.remove("alert-success");
+      }, 3000);
     }
 
     submit.innerText = "submit";
@@ -46,6 +55,15 @@ function addData(e) {
       console.log(li.innerText);
       submit.innerText = "Edit";
       li.remove();
+      // alert-Edit-success
+      document.querySelector(".alert").innerHTML = "Edit Successfully";
+      let alertBox = document.querySelector(".alert");
+      alertBox.classList.add("alert-success");
+
+      setTimeout(() => {
+        document.querySelector(".alert").innerHTML = "";
+        alertBox.classList.remove("alert-success");
+      }, 3000);
     }
     submit.innerText = "submit";
 
