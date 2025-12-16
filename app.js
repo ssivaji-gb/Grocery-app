@@ -1,87 +1,151 @@
-let submit = document.querySelector(".submit-btn");
-document.querySelector(".clear-btn").style.display = "none";
 
-submit.addEventListener("click", addData);
-function addData(e) {
-  e.preventDefault();
-  let data = document.querySelector(".grocery").value.trim();
-  if (data === "") {
-    // alert-danger
-    document.querySelector(".alert").innerHTML = "Please enter a valid item";
-    document.querySelector(".alert").style.color = "red";
-    let alertBox = document.querySelector(".alert");
-    alertBox.classList.add("alert-danger");
+const submit = document.querySelector('.submit-btn');
+const list = document.querySelector('.grocery-list');
+const clear_btn = document.querySelector('.clear-btn');
+const groceryInput = document.querySelector('.grocery');
+const alertContainer = document.querySelector('.alert'); 
+let final = JSON.parse(localStorage.getItem('groceryitem')) || [];
+console.log(final);
+let editFlag = false; 
+let editID = null; 
 
-    setTimeout(() => {
-      document.querySelector(".alert").innerHTML = "";
-      alertBox.classList.remove("alert-danger");
+submit.addEventListener('click', addData);
+clear_btn.addEventListener('click', clearList); 
+
+// Page Reload 
+window.addEventListener('DOMContentLoaded', () => {
+    final.forEach(uiDisplay);
+    if (final.length > 0) {
+        clear_btn.style.display = 'block';
+    }
+});
+
+//alert
+function showAlert(text, action) {
+    alertContainer.innerHTML = text;
+    alertContainer.classList.add(action); 
+    setTimeout(function () {
+        alertContainer.innerHTML = '';
+        alertContainer.classList.remove(action);
     }, 3000);
-  } else {
-    // Add-grocery-item
-    document.querySelector(".clear-btn").style.display = "block";
-    let list = document.querySelector(".grocery-list");
-    let li = document.createElement("li");
-    li.classList.add("grocery-item");
-    li.innerHTML = `<p>${data}</p><span><button class="edit-btn"><i><img src="edit (1).svg" alt="edit"></i></button>
-        <button class="delete-btn"><i><img src="trash-2.svg" alt="delete"></i></button></span>`;
+}
+
+function addData(e) {
+    e.preventDefault();
+    let data = groceryInput.value.trim();
+
+    if (data === '') {
+        showAlert('Please enter a valid item', 'alert-danger');
+        return;
+    } else if (data && !editFlag) {
+        const newItem = {
+            id: new Date().getTime().toString(),
+            items: data,
+        };
+        
+        final.push(newItem);
+        localStorage.setItem('groceryitem', JSON.stringify(final));
+        uiDisplay(newItem);
+        showAlert('Item Added Successfully', 'alert-success');
+        setBackToDefault();
+
+    } else if (data && editFlag) {
+        
+        editItemInStorage(editID, data);
+        const edit = document.querySelector(`[data-id="${editID}"] p`);
+        edit.textContent = data;
+        showAlert('Item Updated Successfully', 'alert-success');
+        setBackToDefault();
+    }
+}
+
+// UI Display Function 
+function uiDisplay(item) {
+    const li = document.createElement('article');
+    li.classList.add('grocery-item');
+    li.setAttribute('data-id', item.id);
+    li.innerHTML = `
+        <p class="title">${item.items}</p>
+        <span>
+            <button type="button" class="edit-btn">
+                <i><img src="edit (1).svg" alt="edit"></i>
+            </button>
+            <button type="button" class="delete-btn">
+                <i><img src="trash-2.svg" alt="delete"></i>
+            </button>
+        </span>
+    `;
+
+    const deleteBtn = li.querySelector('.delete-btn');
+    const editBtn = li.querySelector('.edit-btn');
+
+    deleteBtn.addEventListener('click', deleteItem);
+    editBtn.addEventListener('click', editItem);
+
     list.appendChild(li);
 
-    // delete-btn
-    let delete_btn = li.querySelector(".delete-btn");
-    delete_btn.addEventListener("click", deleteData);
-    function deleteData() {
-      li.remove();
-      if (list.children.length == 0) {
-        document.querySelector(".clear-btn").style.display = "none";
-      }
-      // alert-delete-success
-      document.querySelector(".alert").innerHTML = "Delete Successfully";
-      let alertBox = document.querySelector(".alert");
-      alertBox.classList.add("alert-success");
+  
+    clear_btn.style.display = 'block';
+}
 
-      setTimeout(() => {
-        document.querySelector(".alert").innerHTML = "";
-        alertBox.classList.remove("alert-success");
-      }, 3000);
+
+// Delete function 
+function deleteItem(e) {
+    const element = e.currentTarget.closest('.grocery-item');
+    const id = element.dataset.id;
+
+    list.removeChild(element);
+    deleteItemFromStorage(id);
+    setBackToDefault();
+
+    if (final.length === 0) {
+        clear_btn.style.display = 'none';
     }
+    showAlert('Item Removed', 'alert-danger');
+}
 
-    submit.innerText = "submit";
+function deleteItemFromStorage(id) {
+    final = final.filter(item => item.id !== id);
+    localStorage.setItem('groceryitem', JSON.stringify(final));
+}
 
-    // edit-btn
-    let edit_btn = li.querySelector(".edit-btn");
-    edit_btn.addEventListener("click", editData);
-    function editData() {
-      document.querySelector(".grocery").value = li.innerText;
-      console.log(li.innerText);
-      submit.innerText = "Edit";
-      li.remove();
-      // alert-Edit-success
-      document.querySelector(".alert").innerHTML = "Edit Successfully";
-      let alertBox = document.querySelector(".alert");
-      alertBox.classList.add("alert-success");
+// Edit function
+function editItem(e) {
+    const element = e.currentTarget.closest('.grocery-item');
+    const id = element.dataset.id;
+    const itemText = element.querySelector('.title').textContent;
 
-      setTimeout(() => {
-        document.querySelector(".alert").innerHTML = "";
-        alertBox.classList.remove("alert-success");
-      }, 3000);
+    groceryInput.value = itemText;
+    editFlag = true;
+    editID = id;
+    submit.textContent = 'Edit'; // Change button text to reflect edit mode
+}
+
+function editItemInStorage(id, newValue) {
+    final = final.map(item => {
+        if (item.id === id) {
+            item.items = newValue;
+        }
+        return item;
+    });
+    localStorage.setItem('groceryitem', JSON.stringify(final));
+}
+
+
+function clearList() {
+    while (list.firstChild) {
+        list.removeChild(list.firstChild);
     }
-    submit.innerText = "submit";
+    clear_btn.style.display = 'none';
+    localStorage.removeItem('groceryitem');
+    final = [];
+    showAlert('Empty List', 'alert-danger');
+    setBackToDefault();
+}
 
-    // alert-success
-    document.querySelector(".alert").innerHTML = "Added Item Successfully!!!";
-    let alertBox = document.querySelector(".alert");
-    alertBox.classList.add("alert-success");
-    setTimeout(() => {
-      document.querySelector(".alert").innerHTML = "";
-      alertBox.classList.remove("alert-success");
-    }, 1000);
-
-    // clear-btn
-    document.querySelector(".grocery").value = "";
-    let clear_btn = document.querySelector(".clear-btn");
-    clear_btn.addEventListener("click", clearForm);
-    function clearForm() {
-      list.removeChild(li);
-    }
-  }
+function setBackToDefault() {
+    groceryInput.value = '';
+    editFlag = false;
+    editID = null;
+    submit.textContent = 'Submit'; 
 }
